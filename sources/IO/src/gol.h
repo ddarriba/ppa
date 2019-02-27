@@ -23,3 +23,5 @@ char * start(state * s);
 void free_state(state * s);
 void show(state * s, int clear);
 void show_space(void * space, int rows, int cols, int clear, int offset);
+
+void write_bmp(const char * filename, state * s, int * gsize, int * psize, MPI_Comm comm);

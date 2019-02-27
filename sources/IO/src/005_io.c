@@ -11,7 +11,6 @@
 #include <mpi.h>
 
 #define DEFAULT_INPUT_FN  "data/integers.input"
-#define DEFAULT_OUTPUT_FN "integers.output"
 
 int f(int x)
 {
@@ -70,8 +69,6 @@ int main(int argc, char **argv)
   MPI_File_open(MPI_COMM_WORLD, input_filename,
                 MPI_MODE_RDONLY,
                 MPI_INFO_NULL, &fh);
-
-  int half = mpi_rank / (mpi_size/2);
 
   /* play here with BLOCK / CYCLIC distributions */
   /* for CYCLIC distributions, different dargs */

@@ -47,7 +47,7 @@ int main(int argc, char **argv)
   MPI_Init(&argc, &argv);
 
   /* input parameters */
-  char * filename = (argc >= 4)?argv[1]:"gol.input";
+  char * filename = (argc >= 4)?argv[1]:"data/gol.input";
   int gsize[2] = {(argc >= 4)?atoi(argv[2]):16, (argc >= 4)?atoi(argv[3]):16};
   int lsize[2];
   int max_gens;
@@ -183,6 +183,8 @@ int main(int argc, char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
   }
 #endif
+
+  write_bmp("gol_output.bmp", &s, gsize, mpi.dim, mpi.comm);
 
   /* gather matrix back to root */
   int disps[mpi.size];
