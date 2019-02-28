@@ -186,6 +186,7 @@ int main(int argc, char **argv)
 
   write_bmp("gol_output.bmp", &s, gsize, mpi.dim, mpi.comm);
 
+#if(DEBUG_FINAL_MATRIX)
   /* gather matrix back to root */
   int disps[mpi.size];
   int counts[mpi.size];
@@ -196,7 +197,6 @@ int main(int argc, char **argv)
       }
   }
 
-#if(DEBUG_FINAL_MATRIX)
   if (!mpi.rank)
     mat = (char *) malloc(gsize[ROWS] * gsize[COLS] * sizeof(char));
 

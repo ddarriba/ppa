@@ -1,20 +1,30 @@
-CFLAGS = -Wall -pedantic -O3
 CC = gcc
 MPICC = mpicc
 
-all:
-	mkdir -p bin
-	$(CC) $(CFLAGS) -o bin/io_gen src/io_gen.c
-	$(MPICC) $(CFLAGS) -o bin/001_io src/001_io.c
-	$(MPICC) $(CFLAGS) -o bin/002_io src/002_io.c -lm
-	$(MPICC) $(CFLAGS) -o bin/003_io src/003_io.c
-	$(MPICC) $(CFLAGS) -o bin/004_io src/004_io.c
-	$(MPICC) $(CFLAGS) -o bin/004b_io src/004b_io.c
-	$(MPICC) $(CFLAGS) -o bin/005_io src/005_io.c
-	$(CC) $(CFLAGS) -o bin/gol_gen src/gol_gen.c
-	$(MPICC) $(CFLAGS) -o bin/001_gol src/001_gol.c src/gol.c
-	$(MPICC) $(CFLAGS) -o bin/002_gol src/002_gol.c src/gol.c -lm
-	$(MPICC) $(CFLAGS) -o bin/003_gol src/003_gol.c src/gol.c -lm
+CFLAGS = -Wall -pedantic -O3
+LFLAGS = -lm
 
-002:
-	mpirun -np 4 bin/002_io
+COMMON = src/common.c
+GOL_COMMON = src/gol.c
+
+BINFILES=bin/01a_io_1D_old bin/01b_io_1D_mpi bin/01c_io_1D_mpi_view \
+         bin/02a_io_2D_old bin/02b_io_2D_mpi bin/03_io \
+         bin/001_gol bin/002_gol bin/003_gol \
+				 bin/io_gen bin/gol_gen
+
+all: $(BINFILES)
+
+bin/%gen: src/%gen.c $(DEPS)
+		@mkdir -p "$(@D)"
+		$(CC) $(CFLAGS) -o $@ $< $(COMMON) $(LFLAGS)
+
+bin/%gol: src/%gol.c $(DEPS)
+		@mkdir -p "$(@D)"
+		$(MPICC) $(CFLAGS) -o $@ $< $(COMMON) $(GOL_COMMON) $(LFLAGS)
+
+bin/%: src/%.c $(DEPS)
+		@mkdir -p "$(@D)"
+		$(MPICC) $(CFLAGS) -o $@ $< $(COMMON) $(LFLAGS)
+
+clean:
+		@rm -rf bin

@@ -1,7 +1,7 @@
 /*
- * MPI IO example 1
+ * MPI IO example 2
  *
- * Old times file reading and scattering
+ * 2D file reading and scattering
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -151,12 +151,6 @@ int main(int argc, char **argv)
   MPI_Scatterv(mat, counts, disps, mpi_sblock_t,
               &s.space[1][1], s.rows, mpi_lrow_t,
               0, mpi.comm);
-
-/*
-  MPI_Scatter(mat, s.rows * s.cols, MPI_CHAR,
-              &s.space[1][1], s.rows, mpi_lrow_t,
-              0, MPI_COMM_WORLD);
-*/
 
 #if(DEBUG_LOCAL_MATRICES)
   /* show individual boards */
