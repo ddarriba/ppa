@@ -5,13 +5,8 @@ CFLAGS = -Wall -O3 -std=c99
 LFLAGS = -lm
 
 COMMON = src/common.c
-GOL_COMMON = src/gol.c
 
-BINFILES=bin/01a_io_1D_old bin/01b_io_1D_mpi bin/01c_io_1D_mpi_view \
-         bin/02a_io_2D_old bin/02b_io_2D_mpi bin/02c_io_2D_mpi_collective \
-				 bin/03_io \
-         bin/001_gol bin/002_gol bin/003_gol \
-				 bin/io_gen bin/gol_gen
+BINFILES = bin/01_shared bin/02_hybrid_comm bin/03_hybrid_mm
 
 all: $(BINFILES)
 
