@@ -1,0 +1,24 @@
+Examples included in this folder:
+
+* 01_rma_fence.c
+  - Active target synchronization using fences
+  - MPI_Alloc_mem, MPI_Win_create
+  - MPI_Win_fence, MPI_Put
+
+* 02_rma_ddt.c
+  - Derived datatypes and Put/Get operations
+
+* 03_rma_pscw.c
+  - Generalized active target synchronization (PSCW)
+  - MPI_Comm_group
+  - MPI_Win_post, MPI_Win_start, MPI_Win_complete, MPI_Win_wait
+  
+* 04_rma_passive.c
+  - Passive target synchronization (Lock/Unlock)
+  - Pairwise communication
+  - MPI_Win_lock, MPI_Win_unlock
+  
+* 05_rma_passive.c
+  - Passive target synchronization (Lock/Unlock)
+  - Master/Worker communication
+  - MPI_Win_flush_local
