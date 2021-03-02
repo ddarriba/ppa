@@ -9,6 +9,9 @@
  * 3. Print the results to an output file
  *
  * Note that, input and output files have a binary format!
+ *
+ * Compile: mpicc -Wall -o 01b_io_1D_mpi 01b_io_1D_mpi.c common.c
+ * Run: no arguments required
  */
 #include <stdlib.h>
 #include <stdio.h>

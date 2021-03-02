@@ -1,6 +1,8 @@
 /*
  * IO example 2b: MPI I/O using a distributed array
  *
+ * Compile: mpicc -Wall -o 02c_io_2D_mpi_collective 02c_io_2D_mpi_collective.c common.c
+ *
  * Run: mpirun -np N BIN_NAME Nx Ny
  *      Nx times Ny must equal N
  */
@@ -33,7 +35,8 @@ int main(int argc, char **argv)
 
   if (argc != 3)
   {
-    printf("Usage: %s procs_y procs_x\n", argv[0]);
+    if (!mpi_rank)
+      printf("Usage: %s procs_y procs_x\n", argv[0]);
     MPI_Finalize();
     exit(ERROR_ARGS);
   }
@@ -43,8 +46,9 @@ int main(int argc, char **argv)
 
   if (psizes[0] * psizes[1] != mpi_size)
   {
-    printf("Error: procs_y (%d) x procs_x (%d) != mpi_size (%d)\n",
-           psizes[0], psizes[1], mpi_size);
+    if (!mpi_rank)
+      printf("Error: procs_y (%d) x procs_x (%d) != mpi_size (%d)\n",
+             psizes[0], psizes[1], mpi_size);
     MPI_Finalize();
     exit(ERROR_DIM);
   }

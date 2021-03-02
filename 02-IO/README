@@ -1,24 +1,46 @@
 # MPI IO examples
 
+Versions a, b, and c of the same example are intended to compare against each
+other to learn different ways of doing the same
+
+All examples read a 2D matrix of integers from a binary file as defined in "common.h"
+By default: data/integers.input , size = 32x32.
+The code will just read the 1024 (32x32) first sequential values.
+
+data/integers.input contains a sequence of 2^20 integers starting at 0.
+This way you can play with larger values, but you can also generate your own huge
+integers file using io_gen tool.
+
 Examples included in this folder:
 
 *  01a_io_1D_old
-  - 1D distribution using Scatter/Gather
-  
+  - 1D processes distribution using Scatter/Gather
+
 *  01b_io_1D_mpi
-  - 1D distribution using MPI I/O
-  
+  - 1D processes distribution using MPI I/O
+  - MPI_File_open, MPI_File_seek, MPI_File_close
+  - MPI_File_read, MPI_File_write
+
 *  01c_io_1D_mpi_view
-  - 1D distribution using MPI I/O and File Views
+  - 1D processes distribution using MPI I/O and File Views
+  - MPI_File_set_view
 
 *  02a_io_2D_old
-  - 2D distribution using Scatter/Gather
-  
+  - 2D cartesian topology distribution using Scatter/Gather
+  - Derived datatypes
+  - Virtual Cartesian Topology
+
 *  02b_io_2D_mpi
-  - 2D distribution using MPI I/O
+  - 2D cartesian topology using MPI I/O
 
 *  03_io
   - File views for non contiguous access
-  
 
-Versions a, b, and c of the same example are intended to compare against each other to learn different ways of doing the same
+Auxiliary files:
+
+* io_gen
+  - Tool for generating a (potentially huge) binary integers file
+  - It can also validate the output files from the examples
+
+* common
+  - Common funcions to keep example files as clean as possible

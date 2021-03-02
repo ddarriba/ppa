@@ -1,8 +1,11 @@
 /*
  * IO example 2a: Simple centralized 2D I/O
+ * using derived datatypes and virtual topology
  *
- * Run: mpirun -np N BIN_NAME Nx Ny
- *      Nx times Ny must equal N
+ * Compile: mpicc -Wall -o 02a_io_2D_old 02a_io_2D_old.c common.c
+ *
+ * Run: mpirun -np N 02a_io_2D_old Sx Sy
+ *      Sx times Sy must equal N
  */
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,7 +36,8 @@ int main(int argc, char **argv)
 
   if (argc != 3)
   {
-    printf("Usage: %s procs_y procs_x\n", argv[0]);
+    if (!mpi_rank)
+      printf("Usage: %s procs_y procs_x\n", argv[0]);
     MPI_Finalize();
     exit(ERROR_ARGS);
   }
@@ -43,8 +47,9 @@ int main(int argc, char **argv)
 
   if (psizes[0] * psizes[1] != mpi_size)
   {
-    printf("Error: procs_y (%d) x procs_x (%d) != mpi_size (%d)\n",
-           psizes[0], psizes[1], mpi_size);
+    if (!mpi_rank)
+      printf("Error: procs_y (%d) x procs_x (%d) != mpi_size (%d)\n",
+             psizes[0], psizes[1], mpi_size);
     MPI_Finalize();
     exit(ERROR_DIM);
   }

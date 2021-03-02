@@ -35,7 +35,7 @@ int main(int argc, char ** argv)
   {
     int *a;
 
-    /* create private memory */
+    /* create and initialize private memory */
     MPI_Alloc_mem(SIZE*sizeof(int), MPI_INFO_NULL, &a);
     for (int i=0; i<SIZE; ++i) a[i]=0;
     
@@ -47,6 +47,7 @@ int main(int argc, char ** argv)
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    /* print final matrix */
     for (int i=0; i<SIZE; ++i)
     {
       printf("%4d", a[i]);
