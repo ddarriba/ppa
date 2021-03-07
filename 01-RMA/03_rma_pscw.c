@@ -1,5 +1,6 @@
 /*
  * Example of active target synchronization using PSCW
+ *
  * Processes group pairwise and perform 2 steps
  * 1. Even processes start an exposure epoch
  *    Odd processes start an access epoch and perform a put opearation
@@ -7,6 +8,21 @@
  *
  * Compile: mpicc -Wall -O3 -std=c99 -o 03_rma_pscw 03_rma_pscw.c
  * Run: no arguments required
+ *
+ * This file is part of the PPA distribution (https://github.com/ddarriba/ppa).
+ * Copyright (c) 2021 Diego Darriba.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include <mpi.h>
 #include <stdio.h>
@@ -31,7 +47,7 @@ int main(int argc, char ** argv)
     MPI_Finalize();
     return 1;
   }
-  
+
   MPI_Comm_group(
   	MPI_COMM_WORLD,
   	&world_group);

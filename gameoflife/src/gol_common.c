@@ -4,9 +4,10 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "gol.h"
+#include "gol_common.h"
 
 #define PRINT_GRAPHIC 1
+#define MIN(a,b) (a<b?a:b)
 
 struct bmpfile_magic {
   unsigned char magic[2];
@@ -33,13 +34,19 @@ struct bmpinfo_header {
   uint32_t nimpcolors;
 };
 
-long evolve(state * s, state * snew)
+long evolve(state * s)
 {
   long checksum = 0;
+  int halo = s->halo,
+      h    = s->rows,
+      w    = s->cols;
 
-  for (int y = 1; y <= s->rows; y++)
+  assert(halo == 0 || halo == 1);
+
+  char * temp_ptr = s->s_temp;
+  for (int y = halo; y < h+halo; y++)
   {
-    for (int x = 1; x <= s->cols; x++)
+    for (int x = halo; x < w+halo; x++)
     {
       int n = 0, y1, x1;
 
@@ -48,21 +55,24 @@ long evolve(state * s, state * snew)
       {
         for (x1 = x - 1; x1 <= x + 1; x1++)
         {
-          if (s->space[y1][x1])
-            n++;
+          if (halo)
+            n += s->space[y1][x1];
+          else
+            n += s->space[(y1 + h)%h][(x1 + w)%w];
         }
       }
-      snew->space[y][x] = (n == 3 || (n == 2 && s->space[y][x]));
+      *temp_ptr = (n == 3 || (n == 2 && s->space[y][x]));
+      checksum += s->space[y][x] != *temp_ptr;
+      ++temp_ptr;
     }
   }
 
-  for (int y = 1; y <= s->rows; y++)
-    for (int x = 1; x <= s->cols; x++)
-    {
-      checksum += s->space[y][x] != snew->space[y][x];
-    }
-
-  memcpy(s->space[0], snew->space[0], (s->rows+2)*(s->cols+2));
+  temp_ptr = s->s_temp;
+  for (int y = halo; y < s->rows+halo; y++)
+  {
+    memcpy(s->space[y]+halo, temp_ptr, s->cols);
+    temp_ptr += s->cols;
+  }
 
   s->generation++;
   s->checksum += checksum;
@@ -71,9 +81,13 @@ long evolve(state * s, state * snew)
 
 void show(state * s, int clear)
 {
+  int offset = s->halo != 0;
+  int xlimit = MIN((MAX_PRINTABLE_COLS+2*s->halo), (s->cols+2*s->halo));
+  int ylimit = MIN((MAX_PRINTABLE_ROWS+2*s->halo), (s->rows+2*s->halo));
+
   printf(clear?"\033[H":"\n");
-  for (int y = 1; y <= s->rows; y++) {
-    for (int x = 1; x <= s->cols; x++) {
+  for (int y = offset; y < ylimit; y++) {
+    for (int x = offset; x < xlimit; x++) {
 #if(PRINT_GRAPHIC)
       printf(s->space[y][x] ? "\033[07m  \033[m" : "  ");
 #else
@@ -82,51 +96,78 @@ void show(state * s, int clear)
     }
     printf(clear?"\033[E":"\n");
   }
-  printf("\n\nGen: %5ld Checksum: %ld\n", s->generation, s->checksum);
+  printf("\n\nGen: %8ld Checksum: %15ld\n", s->generation, s->checksum);
   fflush(stdout);
 }
 
 void show_space(void * s, int rows, int cols, int clear, int offset)
 {
-  char (*space)[cols] = s;
+  char (*space)[cols + 2*offset] = s;
+  int xlimit = MIN((MAX_PRINTABLE_COLS+2*offset), (cols+2*offset));
+  int ylimit = MIN((MAX_PRINTABLE_ROWS+2*offset), (rows+2*offset));
 
   printf(clear?"\033[H":"\n");
-  for (int y = offset; y < rows + offset; y++) {
-    for (int x = offset; x < cols + offset; x++) {
-#if(PRINT_GRAPHIC)
-      printf(space[y][x] ? "\033[07m  \033[m" : "  ");
-#else
-      printf("%c ", space[y][x] +'0');
-#endif
+  if (offset)
+  {
+    for (int y = 0; y < ylimit; y++) {
+      if (y == offset || y == rows + offset)
+        printf("\n");
+      for (int x = 0; x < xlimit; x++) {
+        if (x == offset || x == cols + offset)
+          printf("  ");
+        printf("%c ", space[y][x] +'0');
+      }
+      printf(clear?"\033[E":"\n");
     }
-    printf(clear?"\033[E":"\n");
+  }
+  else
+  {
+    for (int y = 0; y < rows; y++) {
+      for (int x = 0; x < cols; x++) {
+        printf("%c ", space[y][x] +'0');
+      }
+      printf(clear?"\033[E":"\n");
+    }
   }
   fflush(stdout);
 }
 
-void alloc_state(state * s, int rows, int cols)
+void alloc_state(state * s, int rows, int cols, int halo)
 {
+  int alloc_rows = halo?(rows+2):rows,
+      alloc_cols = halo?(cols+2):cols;
+  int ystart = halo?1:0;
+
   s->rows      = rows;
   s->cols      = cols;
 
-  s->space     = (char **) malloc ((s->rows+2) * sizeof(char *));
-  s->space[0]  = (char *) calloc ((s->rows+2) * (s->cols+2), sizeof(char));
-  for (int y=1; y<=s->rows+1; ++y)
-      s->space[y] = s->space[0] + y*(s->cols+2);
+
+  s->space     = (char **) malloc (alloc_rows * sizeof(char *));
+
+#ifdef _MPI_
+  MPI_Aint space_size = alloc_rows * alloc_cols * sizeof(char);
+  MPI_Alloc_mem( space_size, MPI_INFO_NULL, s->space);
+#else
+  s->space[0]  = (char *) calloc (alloc_rows * alloc_cols, sizeof(char));
+#endif
+  s->s_temp =  (char *) calloc (s->rows * s->cols, sizeof(char));
+  for (int y=ystart; y<alloc_rows; ++y)
+      s->space[y] = s->space[0] + y*alloc_cols;
 
   s->generation = 0;
   s->checksum = 0;
-}
-
-char * start(state * s)
-{
-  return s->space[1];
+  s->halo = halo;
 }
 
 void free_state(state * s)
 {
+#ifdef _MPI_
+  MPI_Free_mem(s->space[0]);
+#else
   free(s->space[0]);
+#endif
   free(s->space);
+  free(s->s_temp);
 }
 
 
@@ -141,12 +182,6 @@ void free_state(state * s)
 /*
  * This function generates a bitmap file from a game state
  * Note that output image will be flipped vertically for simplicity
- *
- * filename   output file name
- * s          state to print
- * gsize      global 2D space size
- * psize      processes 2D distribution
- * comm       grid communicator
  */
 void write_bmp(const char * filename, state * s, int * gsize, int * psize, MPI_Comm comm)
 {
@@ -159,8 +194,12 @@ void write_bmp(const char * filename, state * s, int * gsize, int * psize, MPI_C
   int col_padding = gsize[1] % 4;
   int bmp_size[2]  = {gsize[0], gsize[1]*3 + col_padding};
   int lbmp_size[2] = {s->rows, bmp_size[1] / psize[1]};
+  int halo = s->halo;
 
   assert(s->rows == bmp_size[0] / psize[0]);
+
+  MPI_Comm_rank(comm, &mpi_rank);
+  MPI_Comm_size(comm, &mpi_size);
 
   if (col_padding)
   {
@@ -168,9 +207,6 @@ void write_bmp(const char * filename, state * s, int * gsize, int * psize, MPI_C
       printf("Error writing bmp file. Current algorithm works only for widths multiple of 4\n");
     return;
   }
-
-  MPI_Comm_rank(comm, &mpi_rank);
-  MPI_Comm_size(comm, &mpi_size);
 
   MPI_File_open(comm, filename,
                 MPI_MODE_CREATE | MPI_MODE_WRONLY,
@@ -232,8 +268,8 @@ void write_bmp(const char * filename, state * s, int * gsize, int * psize, MPI_C
 
   /* compute bitmap */
   char * outptr = bmp_space;
-  for (int y = 1; y <= s->rows; ++y) {
-    for (int x = 1; x <= s->cols; ++x) {
+  for (int y = halo; y < s->rows+halo; ++y) {
+    for (int x = halo; x < s->cols+halo; ++x) {
       int rgb = s->space[y][x]?0:255;
       *outptr++ = rgb;
       *outptr++ = rgb;
@@ -253,10 +289,20 @@ void write_bmp(const char * filename, state * s, int * gsize, int * psize, MPI_C
 
 void write_bmp_seq(const char * filename, state * s)
 {
-  int gsize[2] = {s->rows, s->cols};
+  write_bmp_seq_matrix(filename, s->space, s->rows, s->cols, s->halo);
+}
+
+/*
+ * This function generates a bitmap file from a game state
+ * Output image will be flipped vertically to match MPI version
+ */
+#define FLIP_BMP 1
+void write_bmp_seq_matrix(const char * filename, char ** space, int rows, int cols, int halo)
+{
+  int gsize[2] = {rows, cols};
   int col_padding = gsize[1] % 4;
   int bmp_size[2]  = {gsize[0], gsize[1]*3 + col_padding};
-  int lbmp_size[2] = {s->rows, bmp_size[1]};
+  int lbmp_size[2] = {rows, bmp_size[1]};
 
   FILE *fh = fopen(filename, "w");
 
@@ -293,10 +339,15 @@ void write_bmp_seq(const char * filename, state * s)
   char * bmp_space = (char *) malloc(lbmp_size[1]);
 
   /* compute bitmap */
-  for (int y = s->rows; y > 0 ; --y) {
+#if(FLIP_BMP)
+  for (int y = halo; y < gsize[0] - halo; ++y) {
+#else
+  int revhalo = halo?0:1;
+  for (int y = gsize[0] - revhalo; y > -revhalo ; --y) {
+#endif
     char * outptr = bmp_space;
-    for (int x = 1; x <= s->cols; ++x) {
-      int rgb = s->space[y][x]?0:255;
+    for (int x = halo; x < gsize[1]+halo; ++x) {
+      int rgb = space[y][x]?0:255;
       *outptr++ = rgb;
       *outptr++ = rgb;
       *outptr++ = rgb;

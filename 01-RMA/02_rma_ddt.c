@@ -1,9 +1,25 @@
 /*
  * Example of how to use derived datatypes with RMA operations
+ *
  * Accessing concurrently a window using a column datatype
  *
  * Compile: mpicc -Wall -O3 -std=c99 -o 02_rma_ddt 02_rma_ddt.c
  * Run: no arguments required
+ *
+ * This file is part of the PPA distribution (https://github.com/ddarriba/ppa).
+ * Copyright (c) 2021 Diego Darriba.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include <mpi.h>
 #include <stdio.h>
@@ -33,7 +49,7 @@ int main(int argc, char ** argv)
   /* create private memory */
   MPI_Alloc_mem(ROWS * COLS * sizeof(int), MPI_INFO_NULL, &a);
   for (int i=0; i<ROWS * COLS; ++i) a[i] = 0;
-  
+
   /* collectively declare memory as remotely accessible */
   MPI_Win_create(a, 1000*sizeof(int), sizeof(int),
                  MPI_INFO_NULL, MPI_COMM_WORLD,

@@ -1,5 +1,6 @@
 /*
  * Shows control and performance variables
+ * Try this with several MPI implementations
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,6 +15,7 @@ int main(int argc, char **argv)
   int mpi_rank, mpi_size;
 
   int thread_level;
+  void * cvar_value = malloc(4096);
 
   MPI_Init(&argc, &argv);
 
@@ -39,15 +41,21 @@ int main(int argc, char **argv)
 
   for (int cvar_index=0; cvar_index<cvar_count; ++cvar_index)
   {
-    char cvar_name[200], cvar_desc[1000];
+    char cvar_name[200], cvar_desc[1000], cvar_dt_name[200];
     int cvar_name_len = 200, cvar_desc_len = 1000,
-        cvar_binding, cvar_scope, cvar_verbosity;
+        cvar_binding, cvar_scope, cvar_verbosity,
+        cvar_dt_len;
     MPI_Datatype cvar_datatype;
     MPI_T_enum cvar_enumtype;
+
+    MPI_T_cvar_handle cvar_handle;
+    int count;
 
     MPI_T_cvar_get_info(cvar_index, cvar_name, &cvar_name_len,
            &cvar_verbosity, &cvar_datatype, &cvar_enumtype,
            cvar_desc, &cvar_desc_len, &cvar_binding, &cvar_scope);
+
+    MPI_Type_get_name(cvar_datatype, cvar_dt_name, &cvar_dt_len);
 
     printf("Variable:    [%d] %s\n", cvar_index, cvar_name);
     printf("Description: %s\n", cvar_desc);
@@ -117,26 +125,48 @@ int main(int argc, char **argv)
       default:
         printf("Unknown\n");
     }
-    printf("Datatype:    ");
-    switch(cvar_datatype)
+
+    int handle_error = MPI_T_cvar_handle_alloc(cvar_index, NULL, &cvar_handle, &count);
+    if (!handle_error)
+      MPI_T_cvar_read(cvar_handle, cvar_value);
+    else
+      switch(handle_error)
+      {
+        case MPI_T_ERR_NOT_INITIALIZED:
+              printf("HandleError: The MPI tool information interface is not initialized.\n");
+              break;
+       case MPI_T_ERR_INVALID_INDEX:
+              printf("HandleError: Index is invalid or has been deleted.\n");
+              break;
+       case MPI_T_ERR_INVALID_HANDLE:
+              printf("HandleError: The handle is invalid.\n");
+              break;
+       case MPI_T_ERR_OUT_OF_HANDLES:
+              printf("HandleError: No more handles available.\n");
+              break;
+        default:
+              printf("HandleError: (%d) Unknown\n", handle_error);
+      }
+
+    printf("Datatype:    %s\n", cvar_dt_name);
+    if (!handle_error)
     {
-      case MPI_INT:
-        printf("MPI_INT\n");
-        break;
-      case MPI_CHAR:
-        printf("MPI_CHAR\n");
-        break;
-      case MPI_FLOAT:
-        printf("MPI_FLOAT\n");
-        break;
-      case MPI_DOUBLE:
-        printf("MPI_DOUBLE\n");
-        break;
-      default:
-        printf("Unknown\n");
+      if (cvar_datatype == MPI_INT)
+        printf("Value:       %d\n", ((int *)cvar_value)[0]);
+      else if (cvar_datatype == MPI_CHAR)
+        printf("Value:       %s\n", ((char *)cvar_value));
+      else if (cvar_datatype == MPI_FLOAT)
+        printf("Value:       %f\n", ((float *)cvar_value)[0]);
+      else if (cvar_datatype == MPI_DOUBLE)
+        printf("Value:       %lf\n", ((double *)cvar_value)[0]);
+      else if (cvar_datatype == MPI_C_BOOL)
+        printf("Value:       %s\n", ((int *)cvar_value)[0]?"true":"false");
     }
 
+
     printf("\n");
+
+    MPI_T_cvar_handle_free(&cvar_handle);
   }
 
   MPI_T_pvar_session session;
@@ -150,8 +180,10 @@ int main(int argc, char **argv)
     char pvar_name[200], pvar_desc[1000];
     int pvar_name_len = 200, pvar_desc_len = 1000,
         pvar_binding, pvar_atomic, pvar_verbosity,
-        pvar_readonly, pvar_continuous, pvar_class;
+        pvar_readonly, pvar_continuous, pvar_class,
+        pvar_dt_len;;
     MPI_Datatype pvar_datatype;
+    char pvar_dt_name[200];
     MPI_T_enum pvar_enumtype;
 
     MPI_T_pvar_get_info(pvar_index, pvar_name, &pvar_name_len,
@@ -159,11 +191,13 @@ int main(int argc, char **argv)
            pvar_desc, &pvar_desc_len, &pvar_binding,
            &pvar_readonly, &pvar_continuous, &pvar_atomic);
 
+    MPI_Type_get_name(pvar_datatype, pvar_dt_name, &pvar_dt_len);
     printf("Variable:    [%d] %s\n", pvar_index, pvar_name);
     printf("Description: %s\n", pvar_desc);
     printf("Class = %d, Readonly=%s, Continuous=%s, Atomic=%s\n",
            pvar_class, pvar_readonly?"T":"F",
            pvar_continuous?"T":"F", pvar_atomic?"T":"F");
+    printf("Datatype:    %s\n", pvar_dt_name);
 
     printf("\n");
   }
@@ -172,6 +206,8 @@ int main(int argc, char **argv)
 
   MPI_T_finalize();
   MPI_Finalize();
+
+  free(cvar_value);
 
   return 0;
 }

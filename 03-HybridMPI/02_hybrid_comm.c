@@ -1,3 +1,26 @@
+/*
+ * Example of using communicators in hybrid distributed/shared memory
+ *
+ * Prints local and global ranks
+ *
+ * Compile: mpicc -Wall -o 02_hybrid_comm 02_hybrid_comm.c
+ * Run: No arguments required
+ *
+ * This file is part of the PPA distribution (https://github.com/ddarriba/ppa).
+ * Copyright (c) 2021 Diego Darriba.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>

@@ -20,33 +20,33 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <assert.h>
 
-#include "gol.h"
+#include "gol_common.h"
 
-#define LIVE 1
+#define LIVE 0
+#define WITH_HALO 0
 
-#define MAX_PRINTABLE_WIDTH 80
-
-#define DEFAULT_GENS    80
-#define DEFAULT_IFILE   "data/gol.input"
+#define DEFAULT_GENS    750
+#define DEFAULT_IFILE   "data/gol_grow_40_80.input"
 #define DEFAULT_OFILE   "gol.output.bmp"
-#define DEFAULT_HEIGHT  16
-#define DEFAULT_WIDTH   16
+#define DEFAULT_HEIGHT  40
+#define DEFAULT_WIDTH   80
 
 #define EXIT_OK    0
 #define ERROR_ARGS 1
 
 #if(LIVE)
-#define DISPLAY_SPEED 20000 /* recommended: 200000 */
+#define DISPLAY_DELAY 20000 /* recommended: 200000 */
 #endif
 
 #define IOERR 1
 
-void game(state * s, state * s2, int max_gens);
+void game(state * s, int max_gens);
 
 int main(int argc, char **argv)
 {
-  state s, s2;
+  state s;
 
   /* input parameters */
   char * filename;
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     max_gens = DEFAULT_GENS;
     output_filename = DEFAULT_OFILE;
   }
-  else if (argc == 5)
+  else if (argc >= 5)
   {
     filename = argv[1];
     gsize[0] = atoi(argv[2]);
@@ -76,8 +76,7 @@ int main(int argc, char **argv)
     return ERROR_ARGS;
   }
 
-  alloc_state(&s, gsize[0], gsize[1]);
-  alloc_state(&s2, s.rows, s.cols);
+  alloc_state(&s, gsize[0], gsize[1], WITH_HALO);
 
   FILE * ifile = fopen(filename, "r");
   if (!ifile)
@@ -86,57 +85,58 @@ int main(int argc, char **argv)
     exit(errno);
   }
 
-  for (int y=1; y<=s.rows; ++y)
+  for (int y=s.halo; y<s.rows+s.halo; ++y)
   {
-    int readcnt = fread(s.space[y], sizeof(char), s.cols, ifile);
+    int readcnt = fread(s.space[y]+s.halo, sizeof(char), s.cols, ifile);
     if (readcnt != s.cols) {
         fprintf(stderr,
                 "ERROR, syntax error in '%s'. fread returned %d instead of %d\n",
                 filename, readcnt, s.cols);
         exit(IOERR);
-      }
     }
+  }
   fclose(ifile);
 
-  game(&s, &s2, max_gens);
+  game(&s, max_gens);
 
   write_bmp_seq(output_filename, &s);
 
   free_state(&s);
-  free_state(&s2);
 }
 
-void game(state * s, state * s2, int max_gens)
+void game(state * s, int max_gens)
 {
-
   double sum_gendiff = 0.;
-  while (!max_gens || s->generation <= max_gens)
+  while ((!max_gens && LIVE) || s->generation < max_gens)
   {
-    /* update halo rows */
-    memcpy(s->space[0] + 1, s->space[s->rows] + 1, s->cols);
-    memcpy(s->space[s->rows+1] + 1, s->space[0] + 1, s->cols);
-
-    /* update halo columns */
-    for (int y = 1; y <= s->rows; y++)
+    if (s->halo)
     {
-      s->space[y][0]  = s->space[y][s->cols];
-      s->space[y][s->cols+1] = s->space[y][1];
+      /* update halo rows */
+      memcpy(s->space[0] + 1, s->space[s->rows] + 1, s->cols);
+      memcpy(s->space[s->rows+1] + 1, s->space[1] + 1, s->cols);
+
+      /* update halo columns */
+      for (int y = 1; y <= s->rows; y++)
+      {
+        s->space[y][0]  = s->space[y][s->cols];
+        s->space[y][s->cols+1] = s->space[y][1];
+      }
+
+      /* update halo corners */
+      s->space[0][0] = s->space[s->rows][s->cols];
+      s->space[0][s->cols+1] = s->space[s->rows][1];
+      s->space[s->rows+1][0] = s->space[1][s->cols];
+      s->space[s->rows+1][s->cols+1] = s->space[1][1];
     }
 
-   /* evolve */
-   
+    /* evolve */
+
 #if(LIVE)
-    if (s->cols <= MAX_PRINTABLE_WIDTH)
-    {
-      show(s, 1);
-      usleep(DISPLAY_SPEED);
-    }
+    show(s, LIVE);
+    usleep(DISPLAY_DELAY);
 #endif
-    sum_gendiff += evolve(s, s2);
+    sum_gendiff += evolve(s);
   }
 
-#if(!LIVE)
-  if (s->cols <= MAX_PRINTABLE_WIDTH)
-    show(s, 0);
-#endif
+  show(s, LIVE);
 }
