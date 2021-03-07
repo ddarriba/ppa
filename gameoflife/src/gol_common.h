@@ -8,6 +8,12 @@
 #define MAX_PRINTABLE_COLS 80 /* max cols displayed */
 #define MAX_PRINTABLE_ROWS 40 /* max rows displayed */
 
+#define DEFAULT_GENS    750
+#define DEFAULT_IFILE   "data/gol_grow_40_80.input"
+#define DEFAULT_OFILE   "gol.output.bmp"
+#define DEFAULT_HEIGHT  40
+#define DEFAULT_WIDTH   80
+
 #ifdef _MPI_
 #include <mpi.h>
 #endif
@@ -74,7 +80,7 @@ void show_space(void * space, int rows, int cols, int clear, int offset);
  * @param psize    dimensions of the processes grid
  * @param comm     intracommunicator for processes
  */
-void write_bmp(const char * filename, state * s, int * gsize, int * psize, MPI_Comm comm);
+void write_bmp_mpi(const char * filename, state * s, int * gsize, int * psize, MPI_Comm comm);
 #endif
 
 /**
@@ -83,6 +89,6 @@ void write_bmp(const char * filename, state * s, int * gsize, int * psize, MPI_C
  * @param filename output filename (.bmp)
  * @param s        state containing the space to display
  */
-void write_bmp_seq(const char * filename, state * s);
+void write_bmp(const char * filename, state * s);
 
 void write_bmp_seq_matrix(const char * filename, char ** space, int rows, int cols, int halo);

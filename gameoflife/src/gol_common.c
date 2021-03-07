@@ -44,6 +44,7 @@ long evolve(state * s)
   assert(halo == 0 || halo == 1);
 
   char * temp_ptr = s->s_temp;
+
   for (int y = halo; y < h+halo; y++)
   {
     for (int x = halo; x < w+halo; x++)
@@ -58,7 +59,10 @@ long evolve(state * s)
           if (halo)
             n += s->space[y1][x1];
           else
+          {
+            //Note: mod operation affects performance
             n += s->space[(y1 + h)%h][(x1 + w)%w];
+          }
         }
       }
       *temp_ptr = (n == 3 || (n == 2 && s->space[y][x]));
@@ -183,7 +187,7 @@ void free_state(state * s)
  * This function generates a bitmap file from a game state
  * Note that output image will be flipped vertically for simplicity
  */
-void write_bmp(const char * filename, state * s, int * gsize, int * psize, MPI_Comm comm)
+void write_bmp_mpi(const char * filename, state * s, int * gsize, int * psize, MPI_Comm comm)
 {
   MPI_Offset bmp_offset;
   MPI_Datatype mpi_filetype_t;
@@ -287,7 +291,7 @@ void write_bmp(const char * filename, state * s, int * gsize, int * psize, MPI_C
 }
 #endif
 
-void write_bmp_seq(const char * filename, state * s)
+void write_bmp(const char * filename, state * s)
 {
   write_bmp_seq_matrix(filename, s->space, s->rows, s->cols, s->halo);
 }

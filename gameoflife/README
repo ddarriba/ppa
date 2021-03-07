@@ -1,0 +1,63 @@
+Use case: Game of Life
+
+Conway's Game of Life (CGL) is a cellular automaton created by John Conway in 1970.
+The game evolution is determined by its initial state, requiring no further input.
+One interacts with the Game of Life by creating an initial configuration and
+observing how it evolves, or, for advanced players,by creating patterns with
+particular properties.
+
+The universe of the CGL is an infinite, two-dimensional orthogonal grid of square
+cells, each of which is in one of two possible states, alive or dead (or populated
+and unpopulated, respectively).
+
+Every cell interacts with its eight neighbors, which are the cells that are
+horizontally, vertically, or diagonally adjacent.
+
+At each step in time (generation), the following transitions occur:
+
+* For a space that is ’populated’:
+  * Each cell with less than two neighbors dies, as if by solitude.
+  * Each cell with two or three neighbors lives on to the next generation.
+  * Each cell with four or more neighbors dies, as if by overpopulation.
+* For a space that is ’empty’ or ’unpopulated’:
+  * Each cell with three neighbors becomes populated, as if by reproduction.
+
+Given these simple rules, people usually try to find initial states or patterns
+for the game that present a particular behavior while evolving.
+The most typical examples are the following:
+
+* Oscillator:  Pattern that is a predecessor of itself. That is, it is a pattern
+               that repeats itself after a fixed number of generations (known as
+               its period).
+* Still life:  Pattern that do not change over time (particular kind of
+               oscillator of period 1)
+* Spaceships:  Finite pattern that re-appears after a fixed number of generations
+               displaced by a non-zero amount. Therefore, the pattern (spaceship)
+               will move around the game space until it hits another structure.
+
+By applying specific patterns, like the ones listed before and several others,
+and given the infinite space (memory), it has been proven that CGL is Turing Complete.
+
+The infinite space of the theoretical CGL is somehow a problem for today’s machines.
+For us, the universe will be a two-dimensional orthogonal periodic grid.
+It means that border cells are neighbors of the opposite border.
+
+Check the CGL wiki for examples: https://www.conwaylife.com/wiki
+
+This package contains:
+- src/   Source code for sequential and parallel CGL.
+- data/  Several initial configurations with either 'random' or specific behaviors:
+    %grow%: Grow pattern
+    %bell%: Bell Gun pattern
+    %max%: Max spacefiller pattern (https://www.conwaylife.com/wiki/Max)
+
+Compile: Run `make` and it will build both sequential and MPI versions
+Run:
+  $ gameoflife INPUT HEIGHT WIDTH NGENS [OUTPUT_BMP_FILE]
+
+e.g.,
+  $ bin/gameoflife_seq data/gol_grow_256_1024.input 256 1024 10000 gol.seq.bmp
+  $ bin/gameoflife_seq_LIVE data/gol_grow_40_80.input 40 80 0
+  $ mpirun -n 4 bin/gameoflife_mpi data/gol_grow_256_1024.input 256 1024 10000 gol.mpi.bmp
+
+Validate the MPI output by comparing the checksums and the generated bmp files

@@ -13,6 +13,7 @@ all: $(BINFILES)
 bin/%seq: src/%seq.c $(DEPS)
 		@mkdir -p "$(@D)"
 		$(CC) $(CFLAGS) -o $@ $< $(GOL_COMMON) $(LFLAGS)
+		$(CC) $(CFLAGS) -DLIVE=1 -o $@_LIVE $< $(GOL_COMMON) $(LFLAGS)
 
 bin/%: src/%.c $(DEPS)
 		@mkdir -p "$(@D)"

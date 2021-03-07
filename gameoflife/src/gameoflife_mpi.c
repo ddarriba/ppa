@@ -28,12 +28,6 @@
 
 #define WITH_HALO 1
 
-#define DEFAULT_GENS    160
-#define DEFAULT_IFILE   "data/gol.input"
-#define DEFAULT_OFILE   "gol.output.bmp"
-#define DEFAULT_HEIGHT  16
-#define DEFAULT_WIDTH   16
-
 #define UP    0
 #define DOWN  1
 #define LEFT  2
@@ -88,6 +82,12 @@ int main(int argc, char **argv)
     gsize[COLS] = DEFAULT_WIDTH;
     max_gens = DEFAULT_GENS;
     output_filename = DEFAULT_OFILE;
+
+    printf("Run default configuration:\n");
+    printf("  Input file: %s\n", DEFAULT_IFILE);
+    printf("  Height:     %d\n", DEFAULT_HEIGHT);
+    printf("  Width:      %d\n", DEFAULT_WIDTH);
+    printf("  Gens:       %d\n", DEFAULT_GENS);
   }
   else if (argc >= 5)
   {
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
   }
   else if (mpi.rank == 0)
   {
-      printf("Setting up a %d by %d processes grid\n", mpi.dim[ROWS], mpi.dim[COLS]);
+      printf("Setting up a %d by %d processes grid\n\n", mpi.dim[ROWS], mpi.dim[COLS]);
   }
 
 
@@ -167,12 +167,12 @@ int main(int argc, char **argv)
   {
     if (mpi.rank == p)
     {
-      printf("\nProcess %d/%d (%d,%d) of (%d,%d), local size =  %d x %d = %d:\n",
+      printf("Process %d/%d (%d,%d) of (%d,%d), local size =  %d x %d = %d:\n",
              mpi.rank, mpi.size,
              mpi.coord[ROWS], mpi.coord[COLS],
              mpi.dim[ROWS], mpi.dim[COLS],
              s.rows, s.cols, s.rows * s.cols);
-      printf("  Neighbors UP: %d DOWN: %d LEFT: %d RIGHT: %d\n",
+      printf("  Neighbors UP: %d DOWN: %d LEFT: %d RIGHT: %d\n\n",
              mpi.neighbor[UP], mpi.neighbor[DOWN], mpi.neighbor[LEFT], mpi.neighbor[RIGHT]);
     }
     MPI_Barrier(MPI_COMM_WORLD);
@@ -219,10 +219,6 @@ int main(int argc, char **argv)
 
   game(&s, max_gens, &mpi);
 
-  write_bmp(output_filename, &s, gsize, mpi.dim, mpi.comm);
-  /* uncomment the line below for printing the space state */
-  print_state(&s, "output", gsize, &mpi);
-
   MPI_Reduce(mpi.rank?&s.checksum:MPI_IN_PLACE, &s.checksum, 1,
                MPI_DOUBLE, MPI_SUM, 0,
                MPI_COMM_WORLD);
@@ -233,10 +229,14 @@ int main(int argc, char **argv)
              0, mpi.comm);
 
   if (!mpi.rank)
-  {
-    //write_bmp_seq_matrix(output_filename, mat, gsize[ROWS], gsize[COLS], 0);
-    printf("Global Checksum: %ld\n", s.checksum);
-  }
+    printf("\nGlobal Checksum after %ld generations: %ld\n", s.generation, s.checksum);
+
+  write_bmp_mpi(output_filename, &s, gsize, mpi.dim, mpi.comm);
+  if (!mpi.rank)
+    printf("\nFinal state dumped to %s\n", output_filename);
+
+  /* uncomment the line below for printing the space state */
+  print_state(&s, "output", gsize, &mpi);
 
   if (mat) free(mat);
   free_state(&s);
@@ -290,7 +290,7 @@ void game(state * s, int max_gens, parallel_state * mpi)
   {
     if (mpi->rank == p)
     {
-      printf("\nProcess (%d,%d): Local Checksum %ld\n", mpi->coord[ROWS], mpi->coord[COLS], s->checksum);
+      printf("Process (%d,%d): Local Checksum %ld\n", mpi->coord[ROWS], mpi->coord[COLS], s->checksum);
       //show(s, 0); /* This line prints to stdout the final state */
     }
     MPI_Barrier(MPI_COMM_WORLD);

@@ -24,14 +24,11 @@
 
 #include "gol_common.h"
 
-#define LIVE 0
-#define WITH_HALO 0
+#ifndef LIVE
+  #define LIVE 0
+#endif
 
-#define DEFAULT_GENS    750
-#define DEFAULT_IFILE   "data/gol_grow_40_80.input"
-#define DEFAULT_OFILE   "gol.output.bmp"
-#define DEFAULT_HEIGHT  40
-#define DEFAULT_WIDTH   80
+#define WITH_HALO 1
 
 #define EXIT_OK    0
 #define ERROR_ARGS 1
@@ -59,8 +56,14 @@ int main(int argc, char **argv)
     filename = DEFAULT_IFILE;
     gsize[0] = DEFAULT_HEIGHT;
     gsize[1] = DEFAULT_WIDTH;
-    max_gens = DEFAULT_GENS;
+    max_gens = LIVE?0:DEFAULT_GENS;
     output_filename = DEFAULT_OFILE;
+
+    printf("Run default configuration:\n");
+    printf("  Input file: %s\n", filename);
+    printf("  Height:     %d\n", gsize[0]);
+    printf("  Width:      %d\n", gsize[1]);
+    printf("  Gens:       %d\n", max_gens);
   }
   else if (argc >= 5)
   {
@@ -98,8 +101,10 @@ int main(int argc, char **argv)
   fclose(ifile);
 
   game(&s, max_gens);
+  printf("\nGlobal Checksum after %ld generations: %ld\n", s.generation, s.checksum);
 
-  write_bmp_seq(output_filename, &s);
+  write_bmp(output_filename, &s);
+  printf("\nFinal state dumped to %s\n", output_filename);
 
   free_state(&s);
 }
@@ -138,5 +143,5 @@ void game(state * s, int max_gens)
     sum_gendiff += evolve(s);
   }
 
-  show(s, LIVE);
+  //show(s, LIVE);  /* This line prints to stdout the final state */
 }
