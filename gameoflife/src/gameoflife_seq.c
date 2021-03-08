@@ -84,7 +84,7 @@ int main(int argc, char **argv)
   FILE * ifile = fopen(filename, "r");
   if (!ifile)
   {
-    printf("Error %d\n", errno);
+    fprintf(stderr, "Error: %s %s\n", strerror(errno), filename);
     exit(errno);
   }
 
@@ -95,6 +95,9 @@ int main(int argc, char **argv)
         fprintf(stderr,
                 "ERROR, syntax error in '%s'. fread returned %d instead of %d\n",
                 filename, readcnt, s.cols);
+        fprintf(stderr,
+                "       check if size (%d, %d) is correct for '%s'\n",
+                s.rows, s.cols, filename);
         exit(IOERR);
     }
   }

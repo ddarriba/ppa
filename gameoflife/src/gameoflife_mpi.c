@@ -52,6 +52,7 @@ typedef struct {
 } parallel_state;
 
 void game(state * s, int max_gens, parallel_state * mpi);
+int read_input(state * s, const char * filename, const int *gsize, parallel_state * mpi);
 void print_state(state * s, const char * filename, int *gsizes, parallel_state * mpi);
 
 MPI_Datatype mpi_lcontig_t, mpi_lrow_t, mpi_lcol_t,
@@ -73,7 +74,6 @@ int main(int argc, char **argv)
   parallel_state mpi;
   int lsize[2],
       warp_around[2] = {1,1}; /* cyclic game space? {vertical, horizontal} */
-  char *mat = 0;
 
   if (argc == 1)
   {
@@ -173,72 +173,43 @@ int main(int argc, char **argv)
              mpi.dim[ROWS], mpi.dim[COLS],
              s.rows, s.cols, s.rows * s.cols);
       printf("  Neighbors UP: %d DOWN: %d LEFT: %d RIGHT: %d\n\n",
-             mpi.neighbor[UP], mpi.neighbor[DOWN], mpi.neighbor[LEFT], mpi.neighbor[RIGHT]);
+             mpi.neighbor[UP], mpi.neighbor[DOWN],
+             mpi.neighbor[LEFT], mpi.neighbor[RIGHT]);
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }
 
-  if (!mpi.rank)
-  {
-    /* read initial state from file */
-    mat = (char *) malloc(gsize[ROWS] * gsize[COLS] * sizeof(char));
-
-    FILE * ifile = fopen(filename, "r");
-    if (!ifile)
-    {
-      printf("Error %d\n", errno);
-      MPI_Abort(MPI_COMM_WORLD, errno);
-    }
-
-    for (int y=0; y<gsize[ROWS]; ++y)
-    {
-      int readcnt = fread(mat + y * gsize[COLS], sizeof(char), gsize[COLS], ifile);
-      if (readcnt != gsize[COLS]) {
-          fprintf(stderr,
-                  "ERROR, syntax error in '%s'. fread returned %d instead of %d\n",
-                  filename, readcnt, gsize[COLS]);
-          MPI_Abort(MPI_COMM_WORLD, IOERR);
-      }
-    }
-    fclose(ifile);
-  }
-
-  /* scatter matrix among all processes */
-  int disps[mpi.size];
-  int counts[mpi.size];
-  for (int y=0; y<mpi.dim[ROWS]; y++) {
-      for (int x=0; x<mpi.dim[COLS]; x++) {
-          disps[y*mpi.dim[COLS]+x] = y*gsize[COLS]*lsize[ROWS]+x*lsize[COLS];
-          counts [y*mpi.dim[COLS]+x] = 1;
-      }
-  }
-
-  MPI_Scatterv(mat, counts, disps, mpi_sblock_t,
-              &s.space[1][1], s.rows, mpi_lrow_t,
-              0, mpi.comm);
+  /* read the initial state from file */
+  if (read_input(&s, filename, gsize, &mpi) != MPI_SUCCESS)
+    MPI_Abort(MPI_COMM_WORLD, IOERR);
 
   game(&s, max_gens, &mpi);
+
+  for (int p=0; p<mpi.size; ++p)
+  {
+    if (mpi.rank == p)
+    {
+      printf("Process (%d,%d): Local Checksum %ld\n",
+             mpi.coord[ROWS], mpi.coord[COLS], s.checksum);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
 
   MPI_Reduce(mpi.rank?&s.checksum:MPI_IN_PLACE, &s.checksum, 1,
                MPI_DOUBLE, MPI_SUM, 0,
                MPI_COMM_WORLD);
 
-  /* gather matrix back to root */
-  MPI_Gatherv(&s.space[1][1], s.rows, mpi_lrow_t,
-             mat, counts, disps, mpi_sblock_t,
-             0, mpi.comm);
-
   if (!mpi.rank)
     printf("\nGlobal Checksum after %ld generations: %ld\n", s.generation, s.checksum);
 
+  /* draw the final space state in a bmp image */
   write_bmp_mpi(output_filename, &s, gsize, mpi.dim, mpi.comm);
   if (!mpi.rank)
     printf("\nFinal state dumped to %s\n", output_filename);
 
-  /* uncomment the line below for printing the space state */
+  /* dump the final space state */
   print_state(&s, "output", gsize, &mpi);
 
-  if (mat) free(mat);
   free_state(&s);
 
   MPI_Finalize();
@@ -286,15 +257,73 @@ void game(state * s, int max_gens, parallel_state * mpi)
     /* evolve */
     sum_gendiff += evolve(s);
   }
-  for (int p=0; p<mpi->size; ++p)
+}
+
+/*
+ * Reads the input file and fills the initial state space
+ *
+ * Returns MPI_SUCCESS if the read was correct or an error code otherwise.
+ */
+int read_input(state * s, const char * filename, const int *gsize, parallel_state * mpi)
+{
+  char *mat = 0;
+  int disps[mpi->size];
+  int counts[mpi->size];
+  int return_val;
+
+  if (!mpi->rank)
   {
-    if (mpi->rank == p)
+    /* read initial state from file */
+    mat = (char *) malloc(gsize[ROWS] * gsize[COLS] * sizeof(char));
+
+    FILE * ifile = fopen(filename, "r");
+    if (!ifile)
     {
-      printf("Process (%d,%d): Local Checksum %ld\n", mpi->coord[ROWS], mpi->coord[COLS], s->checksum);
-      //show(s, 0); /* This line prints to stdout the final state */
+      fprintf(stderr, "Error: %s %s\n", strerror(errno), filename);
+      fflush(stderr);
+      return errno;
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+
+    for (int y=0; y<gsize[ROWS]; ++y)
+    {
+      int readcnt = fread(mat + y * gsize[COLS], sizeof(char), gsize[COLS], ifile);
+      if (readcnt != gsize[COLS]) {
+          fprintf(stderr,
+                  "ERROR, syntax error in '%s'. fread returned %d instead of %d\n",
+                  filename, readcnt, gsize[COLS]);
+          fprintf(stderr,
+                  "       check if size (%d, %d) is correct for '%s'\n",
+                  s->rows, s->cols, filename);
+          fflush(stderr);
+          return errno;
+      }
+    }
+    fclose(ifile);
   }
+
+  /* scatter matrix among all processes */
+  for (int y=0; y<mpi->dim[ROWS]; y++) {
+      for (int x=0; x<mpi->dim[COLS]; x++) {
+          disps[y*mpi->dim[COLS]+x] = y*gsize[COLS]*s->rows+x*s->cols;
+          counts [y*mpi->dim[COLS]+x] = 1;
+      }
+  }
+
+  return_val = MPI_Scatterv(mat, counts, disps, mpi_sblock_t,
+                            &s->space[1][1], s->rows, mpi_lrow_t,
+                            0, mpi->comm);
+
+  if (mat) free(mat);
+
+  if (return_val != MPI_SUCCESS)
+  {
+    char err_string[MPI_MAX_ERROR_STRING];
+    int len;
+    MPI_Error_string(return_val, err_string, &len);
+    fprintf(stderr,"Error %d: %s\n", return_val, err_string);
+    fflush(stderr);
+  }
+  return return_val;
 }
 
 void print_state(state * s, const char * filename, int *gsizes, parallel_state * mpi)

@@ -51,7 +51,11 @@ This package contains:
     %bell%: Bell Gun pattern
     %max%: Max spacefiller pattern (https://www.conwaylife.com/wiki/Max)
 
-Compile: Run `make` and it will build both sequential and MPI versions
+Compile: Run `make` and it will build the following:
+* gameoflife_seq: Batch sequential version
+* gameoflife_seq_LIVE: Real-time version (up to 40x80 space size)
+* gameoflife_mpi: Parallel MPI version
+
 Run:
   $ gameoflife INPUT HEIGHT WIDTH NGENS [OUTPUT_BMP_FILE]
 
