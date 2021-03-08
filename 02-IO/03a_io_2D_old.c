@@ -1,26 +1,11 @@
 /*
- * IO example 2a: Simple centralized 2D I/O
+ * IO example 3a: Simple centralized 2D I/O
  * using derived datatypes and virtual topology
  *
- * Compile: mpicc -Wall -o 02a_io_2D_old 02a_io_2D_old.c common.c
+ * Compile: mpicc -Wall -o 03a_io_2D_old 03a_io_2D_old.c common.c
  *
- * Run: mpirun -np N 02a_io_2D_old Sx Sy
+ * Run: mpirun -np N 03a_io_2D_old Sx Sy
  *      Sx times Sy must equal N
- *
- * This file is part of the PPA distribution (https://github.com/ddarriba/ppa).
- * Copyright (c) 2021 Diego Darriba.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
 #include <unistd.h>

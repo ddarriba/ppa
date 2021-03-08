@@ -13,28 +13,37 @@ integers file using io_gen tool.
 
 Examples included in this folder:
 
-*  01a_io_1D_old
+*  01a_simple_write
+  - Concurrent write to an output file
+  - MPI_File_write
+
+*  01b_simple_writeall
+    - Concurrent write to an output file
+    - MPI_File_writeall
+
+*  02a_io_1D_old
   - 1D processes distribution using Scatter/Gather
 
-*  01b_io_1D_mpi
+*  02b_io_1D_mpi
   - 1D processes distribution using MPI I/O
   - MPI_File_open, MPI_File_seek, MPI_File_close
   - MPI_File_read, MPI_File_write
 
-*  01c_io_1D_mpi_view
+*  02c_io_1D_mpi_view
   - 1D processes distribution using MPI I/O and File Views
   - MPI_File_set_view
 
-*  02a_io_2D_old
+*  03a_io_2D_old
   - 2D cartesian topology distribution using Scatter/Gather
   - Derived datatypes
   - Virtual Cartesian Topology
 
-*  02b_io_2D_mpi
+*  03b_io_2D_mpi
   - 2D cartesian topology using MPI I/O
 
-*  03_io
+*  04_fileviews
   - File views for non contiguous access
+  - MPI_File_set_view
 
 Auxiliary files:
 

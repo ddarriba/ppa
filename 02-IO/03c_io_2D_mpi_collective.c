@@ -1,25 +1,10 @@
 /*
  * IO example 2b: MPI I/O using a distributed array
  *
- * Compile: mpicc -Wall -o 02b_io_2D_mpi 02b_io_2D_mpi.c common.c
+ * Compile: mpicc -Wall -o 03c_io_2D_mpi_collective 03c_io_2D_mpi_collective.c common.c
  *
  * Run: mpirun -np N BIN_NAME Nx Ny
  *      Nx times Ny must equal N
- *
- * This file is part of the PPA distribution (https://github.com/ddarriba/ppa).
- * Copyright (c) 2021 Diego Darriba.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdlib.h>
 #include <unistd.h>
@@ -51,7 +36,7 @@ int main(int argc, char **argv)
   if (argc != 3)
   {
     if (!mpi_rank)
-    printf("Usage: %s procs_y procs_x\n", argv[0]);
+      printf("Usage: %s procs_y procs_x\n", argv[0]);
     MPI_Finalize();
     exit(ERROR_ARGS);
   }
@@ -118,7 +103,7 @@ int main(int argc, char **argv)
 
   MPI_File_set_view(fh, 0, MPI_INT, filetype_t, "native", MPI_INFO_NULL);
 
-  MPI_File_read(fh, l_mat, lsizes[0] * lsizes[1], MPI_INT, MPI_STATUS_IGNORE);
+  MPI_File_read_all(fh, l_mat, lsizes[0] * lsizes[1], MPI_INT, MPI_STATUS_IGNORE);
   MPI_File_close(&fh);
 
 
@@ -150,7 +135,7 @@ int main(int argc, char **argv)
 
   MPI_File_set_view(fh, 0, MPI_INT, filetype_t, "native", MPI_INFO_NULL);
 
-  MPI_File_write(fh, l_mat, lsizes[0] * lsizes[1], MPI_INT, MPI_STATUS_IGNORE);
+  MPI_File_write_all(fh, l_mat, lsizes[0] * lsizes[1], MPI_INT, MPI_STATUS_IGNORE);
   MPI_File_close(&fh);
 
 
