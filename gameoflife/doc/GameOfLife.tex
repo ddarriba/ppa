@@ -1,0 +1,335 @@
+\documentclass[a4paper,12pt,openany]{article}
+
+\usepackage[english,activeacute]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage{boxedminipage}
+\usepackage{flushend}
+\usepackage{multicol}
+\usepackage{graphics}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage[left=2cm, right=2cm, top=2cm, bottom=2cm]{geometry}
+
+\lstdefinestyle{C}{
+        language=C,
+        basicstyle=\ttfamily\footnotesize,
+        backgroundcolor=\color{black!20!white},
+        keywordstyle=\color{blue}\ttfamily,
+        stringstyle=\color{red}\ttfamily,
+        commentstyle=\color{black!60!green}\ttfamily,
+        morecomment=[l][\color{magenta}]{\#},
+        numbers=left,
+        numbersep=10pt,
+        numberstyle=\tiny,
+        stepnumber=1,
+        showspaces=false,
+        showstringspaces=false,
+        escapeinside={\%*}{*)}
+}
+\lstset{basicstyle=\small,style=C}
+
+\title{{\Huge\bf Conway's Game of Life}\\
+{\Large Master in High Performance Computing\\
+Advanced Parallel Programming}}
+
+\begin{document}
+
+\maketitle
+
+The Conway's Game of Life (CGL) is a cellular automaton devised by the British mathematician John Horton Conway in 1970.
+The game evolution is determined by its initial state, requiring no further input.
+One interacts with the Game of Life by creating an initial configuration and observing how it evolves, or,
+for advanced players, by creating {\bf patterns} with particular properties (see Section~\ref{sec:patterns}).
+
+\section{Rules}
+
+The universe of the Game of Life is an infinite,
+two-dimensional orthogonal grid of square cells,
+each of which is in one of two possible states, alive or dead,
+(or populated and unpopulated, respectively).
+
+\begin{center}
+\includegraphics[width=.5\textwidth]{img/components.png}
+\end{center}
+
+Every cell interacts with its eight neighbours,
+which are the cells that are horizontally, vertically, or diagonally adjacent.
+
+\begin{center}
+\includegraphics[width=6cm]{img/neighborhood.png}
+\end{center}
+
+At each step in time, the following transitions occur:
+
+\begin{itemize}
+\item For a space that is 'populated':
+  \begin{itemize}
+  \item Each cell with less than two neighbors dies, as if by {\bf solitude}.
+  \item Each cell with two or three neighbors lives on to the next generation.
+  \item Each cell with four or more neighbors dies, as if by {\bf overpopulation}.
+  \end{itemize}
+\item For a space that is 'empty' or 'unpopulated'
+  \begin{itemize}
+  \item Each cell with three neighbors becomes populated, as if by {\bf reproduction}.
+  \end{itemize}
+\end{itemize}
+
+Below you can see an example of transition (evolution) from one state to the next one
+after applying the previous rules:
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{img/transition.png}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Patterns}
+\label{sec:patterns}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Given these simple rules, people usually try to find initial states or patterns for the game
+that present a particular behavior while evolving.
+The most typical examples are the following:
+
+\begin{itemize}
+\item Oscillator: Pattern that is a predecessor of itself. That is, it is a pattern that repeats itself after a fixed number of generations (known as its period). For example, the oscillator named pulsar has a period of 3:
+
+%\begin{center}
+\includegraphics[width=.7\textwidth]{img/pulsar.png}
+%\end{center}
+
+\item Still life: Pattern that do not change over time (particular kind of oscillator of period 1).
+
+\begin{tabular}{ccccc}
+\includegraphics[height=2cm]{img/pattern_stable_block.png} &
+\includegraphics[height=2cm]{img/pattern_stable_hive.png} &
+\includegraphics[height=2cm]{img/pattern_stable_loaf.png} &
+\includegraphics[height=2cm]{img/pattern_stable_boat_tie.png} &
+\includegraphics[height=2cm]{img/pattern_stable_ship_tie.png} \\
+Block & Hive & Loaf & Boat tie & Ship tie\\
+\end{tabular}
+
+\item Spaceships: Finite pattern that re-appears after a fixed number of generations displaced by a non-zero amount.
+Therefore, the pattern (spaceship) will move around the game space until it hits another structure.
+
+\includegraphics[width=\textwidth]{img/pattern_spaceship.png}
+\end{itemize}
+
+\section{Turing Completeness}
+
+By applying specific patterns, like the ones listed before and several others, and given the infinite space (memory),
+it has been proven that CGL is Turing Complete.
+
+You can find a Universal Turing Machine pattern made for CGL by Paul Rendell in the following
+article: \url{https://www.ics.uci.edu/~welling/teaching/271fall09/Turing-Machine-Life.pdf}.
+
+So now, just try to imagine what you could create with the Game of Life if you had
+time, computational memory, and patience enough.
+
+
+\section{Computing the Conway's Game of Life}
+
+The infinite space of the theoretical CGL is somehow a problem for today's machines.
+For us, the universe will be a two-dimensional orthogonal periodic grid.
+It means that border cells are neighbors of the opposite border.
+
+\begin{center}
+\includegraphics[width=.5\textwidth]{img/myuniverse.png}
+\end{center}
+
+First, we define what a state is for us.
+A state contains a finite {\emph space} of size {\emph rows} by {\emph cols}.
+Additionally, also contains the {\emph generation} count,
+a {\emph checksum} and third extra variable called {\emph halo}.
+
+\begin{lstlisting}
+typedef struct {
+  int   rows;       	/* no. of rows in grid */
+  int   cols;       	/* no. of columns in grid */
+  char **space;    	/* a pointer to a list of pointers for storing
+                     	   a dynamic NxM grid of cells */
+  char *s_tmp;          /* auxiliary space for the evolution process */
+  long generation;      /* current state generation */
+  long checksum;        /* evolution checksum */
+  int halo;             /* (boolean) space contains halo rows/columns */
+} state;
+\end{lstlisting}
+
+{\emph Checksum} is the count of differences between state of consecutive generations,
+and it is useful for us to check the correctness of our parallel implementations.
+The fastest way to check whether 2 implementations or runs behave the same, is to
+ensure that both reach the same checksum after running from the same initial state
+and the same number of generations.
+
+{\emph Halo} is a boolean variable that indicates whether the allocated space contains
+halo rows/columns or not.
+If true, it means that the universe space was actually allocated for $(rows+2)$ by $(cols+2)$ cells.
+Since the universe is cyclic, the borders of the space must check the opposite borders in
+order to count the neighbors.
+Also, it is possible that the owner of the state does not have the whole (finite) space,
+but just a subset of it.
+While non of these are problems for sequential execution,
+if we split the CGL space into several processes,
+it is possible that we do not have access to the actual neighbors locally,
+and we need a place to store those neighbors.
+
+The main algorithm (pseudocode) is as simple as follows:
+
+\begin{lstlisting}
+initialize state s
+
+/** encapsulated in game() procedure **/
+// main loop
+while (s.generation < MAX_GENERATIONS)
+{
+  evolve(s)
+}
+/** end of game() procedure */
+
+display final state and/or checksum
+write bmp image
+\end{lstlisting}
+
+The {\emph evolve} function, calculates the next generation of the universe at the current state (s$\rightarrow$space).
+Therer are 2 loops (y,x) that go across the space matrix.
+For each cell the algorithm visits its neighborhood using 2 inner loops (y1,x1) and
+counts the alive cells.
+Afterwards, it computes the new state for the cell $[y,x]$ as a function of $n$ and the {\emph current state}.
+
+\begin{lstlisting}
+void evolve(state * s)    // active (current) state [in, out]
+{
+  char * temp_ptr = s->s_temp;
+  // for each cell (y,x)
+  for (int y = 0; y < s->rows; y++)
+  {
+    for (int x = 0; x < s->cols; x++)
+    {
+      // count neighbors (n)
+      int n = 0;
+      if (s->space[y][x]) n--;
+      for (int y1 = y - 1; y1 <= y + 1; y1++)
+      {
+        for (int x1 = x - 1; x1 <= x + 1; x1++)
+        {
+          n += (s->space[(y1 + s->rows) % s->rows]
+                      [(x1 + s->cols) % s->cols]);
+        }
+      }
+      // apply CGL rules as a function of n and the current state
+      *temp_ptr = (n == 3 || (n == 2 && s->space[y][x]));
+      ++temp_ptr;
+    }
+  }
+
+  // copy the new state to the active state
+  memcpy(s->space[0], s->s_temp, s->rows * s->cols);
+}
+\end{lstlisting}
+
+Note that line $16$ uses a modulus operation to account for the periodicity of the grid.
+That works when the process running the algorithm owns the whole space matrix.
+However, when running the algorithm in parallel, (1) the process does not contain locally the state of the opposite cell for at least one dimension, and (2) the dimensions of the space ($s\rightarrow rows$ and $s\rightarrow cols$) are the dimensions of the local space
+(i.e., the whole space divided by the number of processors).
+
+\section{Parallel approach}
+
+\begin{multicols}{2}
+In order to split the workload of each iteration among several processes,
+we need to break the game space into equally sized blocks.
+However, after splitting the game space in such a way,
+the previous $evolve$ algorithm will not work anymore.
+Instead of using the modulus operation, we define extra rows and columns at the borders
+of the space, that contain the neighborhood data for the border cells.
+\columnbreak
+\begin{center}
+\includegraphics[width=6cm]{img/neighbors.png}
+\end{center}
+\end{multicols}
+
+\begin{center}
+\line(1,0){250}
+\end{center}
+
+\begin{multicols}{2}
+Thus, we need to update the algorithm to account for the possibility of using halo rows.
+For exchanging the halo a process must communicate with its 4 direct neighbors.
+In order to avoid communications with the diagonal neighbors, we exchange the
+corners in 2 steps:
+
+\columnbreak
+\begin{center}
+\includegraphics[width=6cm]{img/corners.png}
+\end{center}
+\end{multicols}
+
+\begin{lstlisting}
+initialize state s
+
+/** encapsulated in game() procedure **/
+// main loop
+while (s.generation < MAX_GENERATIONS)
+{
+  /* update halo (rows, columns and corners):
+   * local: copy cells from the opposite side of the space
+   * remote: get the neighbor cells from neighbor processes */
+  exchange_halo_vertical(s.space);
+  exchange_halo_horizontal(s.space);
+  exchange_halo_corners(s.space);
+
+  /* evolves the -local- space */
+  evolve(s)
+}
+/* end of game() procedure */
+
+global_checksum <- reduce(local_checksums)
+display(checksums)
+
+write_bmp_image(...) // in parallel
+\end{lstlisting}
+
+Also, the $evolve$ function looks slightly different.
+Now, if $halo == 1$, the 2 nested loops that go across the matrix have a
+range of $[1,rows]$ and $[1,cols]$ instead of $[0,rows)$ and $[0,cols)$.
+Therefore, the 2 inner nested loops for the neighborhood (y1,x1) have a range
+of $[0,rows+1]$ and $[0,cols+1]$, which is the allocated space for the
+game state plus the halo.
+
+Line $19$ in the algorithm below is equivalent to line $16$ in the sequential algorithm, but checks the halo cells instead of using the modulus operation.
+
+\begin{lstlisting}
+void evolve(state * s)    // active (current) state [in, out]
+{
+  assert(halo == 1);
+
+  char * temp_ptr = s->s_temp;
+  // for each cell (y,x)
+  for (int y = halo; y < h+halo; y++)
+  {
+    for (int x = halo; x < w+halo; x++)
+    {
+      int n = 0, y1, x1;
+
+      // count neighbors (n)
+      if (s->space[y][x]) n--;
+      for (y1 = y - 1; y1 <= y + 1; y1++)
+      {
+        for (x1 = x - 1; x1 <= x + 1; x1++)
+        {
+          n += s->space[y1][x1];
+        }
+      }
+      // apply CGL rules as a function of n and the current state
+      *temp_ptr = (n == 3 || (n == 2 && s->space[y][x]));
+      checksum += s->space[y][x] != *temp_ptr;
+      ++temp_ptr;
+    }
+  }
+  ...
+}
+\end{lstlisting}
+
+
+
+\end{document}

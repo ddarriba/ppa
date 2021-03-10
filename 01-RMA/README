@@ -14,13 +14,17 @@ Examples included in this folder:
   - Generalized active target synchronization (PSCW)
   - MPI_Comm_group
   - MPI_Win_post, MPI_Win_start, MPI_Win_complete, MPI_Win_wait
-  
+
 * 04_rma_passive.c
   - Passive target synchronization (Lock/Unlock)
   - Pairwise communication
   - MPI_Win_lock, MPI_Win_unlock
-  
+
 * 05_rma_passive.c
   - Passive target synchronization (Lock/Unlock)
   - Master/Worker communication
   - MPI_Win_flush_local
+
+* 06_memory_model.c
+  - Prints the memory model and some other Window attributes
+  - MPI_Win_get_attr

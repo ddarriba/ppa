@@ -75,6 +75,9 @@ int main(int argc, char **argv)
   int lsize[2],
       warp_around[2] = {1,1}; /* cyclic game space? {vertical, horizontal} */
 
+  /* runtimes */
+  double s_time, i_time, c0_time, c1_time, e_time;
+
   if (argc == 1)
   {
     filename = DEFAULT_IFILE;
@@ -179,11 +182,17 @@ int main(int argc, char **argv)
     MPI_Barrier(MPI_COMM_WORLD);
   }
 
+  s_time = MPI_Wtime();
+
   /* read the initial state from file */
   if (read_input(&s, filename, gsize, &mpi) != MPI_SUCCESS)
     MPI_Abort(MPI_COMM_WORLD, IOERR);
 
+  i_time = MPI_Wtime();
+
   game(&s, max_gens, &mpi);
+
+  c0_time = MPI_Wtime();
 
   for (int p=0; p<mpi.size; ++p)
   {
@@ -202,6 +211,8 @@ int main(int argc, char **argv)
   if (!mpi.rank)
     printf("\nGlobal Checksum after %ld generations: %ld\n", s.generation, s.checksum);
 
+  c1_time = MPI_Wtime();
+
   /* draw the final space state in a bmp image */
   write_bmp_mpi(output_filename, &s, gsize, mpi.dim, mpi.comm);
   if (!mpi.rank)
@@ -210,6 +221,15 @@ int main(int argc, char **argv)
   /* dump the final space state */
   print_state(&s, "output", gsize, &mpi);
 
+  e_time = MPI_Wtime();
+
+  if (!mpi.rank)
+  {
+    printf("\nRuntimes:\n");
+    printf("  Input: %lf seconds\n", i_time - s_time);
+    printf("  Computation: %lf seconds\n", c0_time - i_time);
+    printf("  Output: %lf seconds\n", e_time - c1_time);
+  }
   free_state(&s);
 
   MPI_Finalize();
