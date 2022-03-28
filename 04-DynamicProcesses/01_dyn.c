@@ -1,4 +1,12 @@
-/* manager */
+/*
+ * Dynamic processes example 1: Spawn hello world processes
+ *
+ * Compile: mpicc -Wall -o 01_dyn 01_dyn.c
+ *          mpicc -Wall -o aux_01_worker aux_01_worker.c
+ *
+ * NOTE: aux_01_worker must be compiled before running this example:
+ *       
+ */
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -8,7 +16,9 @@ int main(int argc, char *argv[])
 {
    int world_size, universe_size, *universe_sizep, flag;
    MPI_Comm children_comm;           /* intercommunicator */
-   char worker_program[100] = "bin/aux_01_worker";
+   
+   /* by default, all spawned children will be aux_01_worker */
+   char worker_program[100] = "./aux_01_worker";
 
    MPI_Init(&argc, &argv);
    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -54,8 +64,6 @@ int main(int argc, char *argv[])
     * first started, it is generally better to start them all at once
     * in a single MPI_COMM_WORLD.
     */
-
-   //choose_worker_program(worker_program);
 
    MPI_Comm_spawn(worker_program, MPI_ARGV_NULL, universe_size-1,
              MPI_INFO_NULL, 0, MPI_COMM_SELF, &children_comm,

@@ -1,4 +1,12 @@
-/* manager */
+/*
+ * Dynamic processes example 2: Spawn children and merge communicators
+ *
+ * Compile: mpicc -Wall -o 02_connect 02_connect.c
+ *          mpicc -Wall -o aux_02_worker aux_02_worker.c
+ *
+ * NOTE: aux_02_worker must be compiled before running this example:
+ *       
+ */
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -10,7 +18,7 @@ int main(int argc, char *argv[])
    int mpi_rank, mpi_size, global_rank, global_size;
 
    MPI_Comm children_comm, global_comm;           /* intercommunicator */
-   char worker_program[100] = "bin/aux_02_worker";
+   char worker_program[100] = "./aux_02_worker";
 
    MPI_Init(&argc, &argv);
    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -64,24 +72,24 @@ int main(int argc, char *argv[])
              MPI_INFO_NULL, 0, MPI_COMM_SELF, &children_comm,
              MPI_ERRCODES_IGNORE);
 
-  MPI_Intercomm_merge(
+   MPI_Intercomm_merge(
                children_comm,
                0,
                &global_comm
              );
 
-  MPI_Comm_rank(global_comm, &global_rank);
-  MPI_Comm_size(global_comm, &global_size);
+   MPI_Comm_rank(global_comm, &global_rank);
+   MPI_Comm_size(global_comm, &global_size);
 
-  for (int i=0; i<global_size; ++i)
-  {
-    if (i == global_rank)
-    {
-      printf("Parent %d/%d\n", mpi_rank, mpi_size);
-      printf("  Global process %d/%d\n", global_rank, global_size);
-    }
-    MPI_Barrier(global_comm);
-  }
+   for (int i=0; i<global_size; ++i)
+   {
+     if (i == global_rank)
+     {
+       printf("Parent %d/%d\n", mpi_rank, mpi_size);
+       printf("  Global process %d/%d\n", global_rank, global_size);
+     }
+     MPI_Barrier(global_comm);
+   }
 
    /*
     * Parallel code here. The communicator "everyone" can be used

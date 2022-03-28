@@ -1,0 +1,19 @@
+# Hybrid memory MPI+MPI examples
+
+Examples included in this folder:
+
+*  01_shared
+  - MPI for shared memory
+  - MPI_Comm_split_type, MPI_Win_allocate_shared, MPI_Win_shared_query
+
+*  02_hybrid_comm
+  - Setting Communicators for hybrid memory
+  - MPI_Group_translate_ranks
+
+*  03_hybrid_mm
+  - Matrix multiplication with MPI+MPI
+
+Auxiliary files:
+
+* common
+  - Common functions to keep example files as clean as possible

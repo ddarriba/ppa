@@ -1,0 +1,15 @@
+# Dynamic process management examples
+
+Examples included in this folder
+
+*  01_dyn
+  - MPI_Comm_spawn for spawning child processes
+  
+*  02_connect
+  - MPI_Intercomm_merge for connecting children and parent in a single comm
+
+*  03_comm
+  - MPI_Publish_name: puclish the connection port (server)
+  - MPI_Lookup_name: find the connection port (client)
+  - MPI_Comm_connect: request a remote connection (client)
+  - MPI_Comm_accept: accept a remote connection (server)

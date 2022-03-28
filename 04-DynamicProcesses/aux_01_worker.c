@@ -1,5 +1,7 @@
 /* worker */
 
+/* prints a hello world */
+
 #include <stdio.h>
 #include <mpi.h>
 
@@ -28,7 +30,7 @@ int main(int argc, char *argv[])
    /*
     * Parallel code here.
     * The manager is represented as the process with rank 0 in (the remote
-    * group of) MPI_COMM_PARENT.  If the workers need to communicate among
+    * group of) MPI_COMM_PARENT. If the workers need to communicate among
     * themselves, they can use MPI_COMM_WORLD.
     */
    printf("Hi from child %d/%d! Parent size: %d\n", mpi_rank, mpi_size, parent_size);

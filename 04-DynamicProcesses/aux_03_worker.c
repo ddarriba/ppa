@@ -1,5 +1,7 @@
 /* worker */
 
+/* connects to parent by explicit request */
+
 #include <stdio.h>
 #include <mpi.h>
 
@@ -26,6 +28,7 @@ int main(int argc, char *argv[])
    MPI_Comm_connect(port_name, MPI_INFO_NULL,
                     0, MPI_COMM_WORLD, &connect_comm);
 
+   MPI_Comm_remote_size(connect_comm, &parent_size);
 
    MPI_Intercomm_merge(connect_comm,
                        1,

@@ -14,6 +14,9 @@
 #define DEFAULT_HEIGHT  40
 #define DEFAULT_WIDTH   80
 
+#define ROWS 0
+#define COLS 1
+
 #ifdef _MPI_
 #include <mpi.h>
 #endif
@@ -28,6 +31,18 @@ typedef struct {
   long checksum;
   int halo;
 } state;
+
+/**
+ * parse the input arguments
+ * @param  argc             [input]  argument count
+ * @param  argv             [input]  argument values
+ * @param  filename         [output] input filename
+ * @param  gsize            [output] size of the state space
+ * @param  max_gens         [output] maximum number of generations
+ * @param  output_filename  [output] output filename for bmp file
+ * @return 1 if OK, 0 otherwise
+ */
+int parse_arguments(int argc, char *argv[], char **filename, int *gsize, int *max_gens, char **output_filename);
 
 /**
  * compute the next generation for state `s`

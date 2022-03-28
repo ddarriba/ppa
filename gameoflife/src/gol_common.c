@@ -34,6 +34,35 @@ struct bmpinfo_header {
   uint32_t nimpcolors;
 };
 
+int parse_arguments(int argc, char *argv[], char **filename, int *gsize, int *max_gens, char **output_filename)
+{
+if (argc == 1)
+  {
+    *filename = DEFAULT_IFILE;
+    gsize[ROWS] = DEFAULT_HEIGHT;
+    gsize[COLS] = DEFAULT_WIDTH;
+    *max_gens = DEFAULT_GENS;
+    *output_filename = DEFAULT_OFILE;
+
+    printf("Run default configuration:\n");
+    printf("  Input file: %s\n", DEFAULT_IFILE);
+    printf("  Height:     %d\n", DEFAULT_HEIGHT);
+    printf("  Width:      %d\n", DEFAULT_WIDTH);
+    printf("  Gens:       %d\n", DEFAULT_GENS);
+  }
+  else if (argc >= 5)
+  {
+    *filename = argv[1];
+    gsize[ROWS] = atoi(argv[2]);
+    gsize[COLS] = atoi(argv[3]);
+    *max_gens = atoi(argv[4]);
+    *output_filename = argc == 6?argv[5]:DEFAULT_OFILE;
+  }
+  else
+    return 0;
+  return 1;
+}
+
 long evolve(state * s)
 {
   long checksum = 0;
@@ -150,7 +179,7 @@ void alloc_state(state * s, int rows, int cols, int halo)
 
 #ifdef _MPI_
   MPI_Aint space_size = alloc_rows * alloc_cols * sizeof(char);
-  MPI_Alloc_mem( space_size, MPI_INFO_NULL, s->space);
+  MPI_Alloc_mem(space_size, MPI_INFO_NULL, s->space);
 #else
   s->space[0]  = (char *) calloc (alloc_rows * alloc_cols, sizeof(char));
 #endif

@@ -6,6 +6,7 @@ other to learn different ways of doing the same
 All examples read a 2D matrix of integers from a binary file as defined in "common.h"
 By default: data/integers.input , size = 32x32.
 The code will just read the 1024 (32x32) first sequential values.
+You can change the size in common.h (such that HxW <= 1024).
 
 data/integers.input contains a sequence of 2^20 integers starting at 0.
 This way you can play with larger values, but you can also generate your own huge
@@ -40,8 +41,13 @@ Examples included in this folder:
 
 *  03b_io_2D_mpi
   - 2D cartesian topology using MPI I/O
+  - MPI_Type_create_darray
 
-*  04_fileviews
+*  04_subarray
+  - Similar to example 03b but using a subarray for heterogeneous distributions
+  - MPI_Type_create_subarray
+
+*  05_fileviews
   - File views for non contiguous access
   - MPI_File_set_view
 

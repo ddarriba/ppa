@@ -1,5 +1,7 @@
 /* worker */
 
+/* connects to parent by merging communicators */
+
 #include <stdio.h>
 #include <mpi.h>
 

@@ -1,4 +1,12 @@
-/* manager */
+/*
+ * Dynamic processes example 3: Dynamic connect children and parent processes
+ *
+ * Compile: mpicc -Wall -o 03_connect 03_connect.c
+ *          mpicc -Wall -o aux_03_worker aux_03_worker.c
+ *
+ * NOTE: aux_03_worker must be compiled before running this example:
+ *       
+ */
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,7 +20,7 @@ int main(int argc, char *argv[])
    int mpi_rank, mpi_size, global_rank, global_size;
 
    MPI_Comm children_comm, global_comm, connect_comm;           /* intercommunicator */
-   char worker_program[100] = "bin/aux_03_worker";
+   char worker_program[100] = "./aux_03_worker";
 
    MPI_Init(&argc, &argv);
    MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);

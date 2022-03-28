@@ -53,8 +53,8 @@ int main(int argc, char **argv)
     exit(ERROR_DIM);
   }
 
-  lsizes[0] = gsizes[0] / psizes[0];
-  lsizes[1] = gsizes[1] / psizes[1];
+  lsizes[0] = gsizes[0] / psizes[0] + ((gsizes[0] % psizes[0])?1:0);
+  lsizes[1] = gsizes[1] / psizes[1] + ((gsizes[1] % psizes[1])?1:0);
 
   if (!mpi_rank)
   {
@@ -85,14 +85,14 @@ int main(int argc, char **argv)
 
   /* play here with BLOCK / CYCLIC distributions */
   /* for CYCLIC distributions, different dargs */
-  int distribs[2] = {MPI_DISTRIBUTE_BLOCK, MPI_DISTRIBUTE_BLOCK};
+  int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
   int dargs[2] = {MPI_DISTRIBUTE_DFLT_DARG, MPI_DISTRIBUTE_DFLT_DARG};
   int mpi_dim[2] = {psizes[0], psizes[1]};
 
   MPI_Type_create_darray(mpi_size,
                          mpi_rank,
                          2,           /* number of dimensions */
-                         gsizes,       /* global size */
+                         gsizes,      /* global size */
                          distribs,    /* block or cyclic */
                          dargs,       /* distribution size */
                          mpi_dim,     /* mpi dimensions */
